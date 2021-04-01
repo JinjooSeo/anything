@@ -1,19 +1,19 @@
 #include "DrawTool.C"
 
 //--Parameter Setting------------------------------------------------------
-double k = 1.5; // at 5.02TeV, controls the width, fpar[0]
-double mu = 46.4; // at 5.02TeV, mean multiplicity per ancestor, fpar[1]
-double f = 0.801; // at 5.02TeV
+double k = 1.6; // 1.5 for 5.02TeV, controls the width, fpar[0]
+double mu = 29.3; // 46.4 for 5.02TeV, mean multiplicity per ancestor, fpar[1]
+double f = 0.801; // at 2.76TeV , 5.02TeV
 bool DrawDist = true; //Draw spectrums on canvas
 
 Double_t fNBD(double *x, double *fpar);
 
 void MCGlauber2Data(){
-  TFile *inputMCGlauber = TFile::Open("MCGlauber-PbPb-5020GeV-b0-18fm.root","read");
+  TFile *inputMCGlauber = TFile::Open("MCGlauber-PbPb-2760GeV-b0-18fm.root","read");
   TTree *GlauberTree = (TTree*) inputMCGlauber->Get("lemon");
 
   ofstream outFile;
-  outFile.open("Geometry_PbPb_5020GeV.csv");
+  outFile.open("Geometry_PbPb_2760GeV.csv");
   outFile << "b\tNpart\tNcoll\n";
 
   Int_t Npart, Ncoll, Nanc;
@@ -24,11 +24,11 @@ void MCGlauber2Data(){
 
   TH1D *hbDist = new TH1D("hbDist","",100,0,18);
   TH1D *hNpart = new TH1D("hNpart","",100,0,420);
-  TH1D *hnHitsDist = new TH1D("hnHitsDist","",100,0,13000);
+  TH1D *hnHitsDist = new TH1D("hnHitsDist","",100,0,22000);
   TH2D *hNpartvsb = new TH2D("hbvsNpart","",40,0,400,18,0,18);
   TH2D *hNcollvsb = new TH2D("hbvsNcoll","",20,0,2000,18,0,18);
 
-  TF1 *pdf_NBD = new TF1("fNBD",fNBD,0,50,2);
+  TF1 *pdf_NBD = new TF1("fNBD",fNBD,0,100,2);
   pdf_NBD->SetParameters(k,mu);
 
   for(int i=0; i<GlauberTree->GetEntriesFast(); i++){
@@ -50,7 +50,7 @@ void MCGlauber2Data(){
 
   if(DrawDist){  //----------------------------------------------Draw histogram on canvas
     SetStyle();
-    int nCan = 5;
+    int nCan = 6;
     TCanvas **can = new TCanvas*[nCan];
     for(int i=0; i<nCan; i++) can[i] = new TCanvas(Form("Can%d",i),"",650,500);
 
@@ -66,12 +66,15 @@ void MCGlauber2Data(){
     can[4]->cd();
     gPad->SetLogy();
     hNpart->Draw(); SetAxis(hNpart,"N_{part}","entries");
+    can[5]->cd();
+    pdf_NBD->Draw(); pdf_NBD->GetXaxis()->SetTitle("n");  pdf_NBD->GetYaxis()->SetTitle("Probability");
 
     can[0]->SaveAs("ImpactParameter.pdf");
     can[1]->SaveAs("propV0Amp.pdf");
     can[2]->SaveAs("Npartvsb.pdf");
     can[3]->SaveAs("Ncollvsb.pdf");
     can[4]->SaveAs("Npart.pdf");
+    can[5]->SaveAs("NBDfunction.pdf");
 
   }
 
@@ -81,7 +84,7 @@ void MCGlauber2Data(){
 Double_t fNBD(double *x, double *fpar)  // n hits per ancestor
 {
   Float_t xx = x[0];
-  Double_t gamterm = tgamma(xx+fpar[0])/(tgamma(xx+1)*tgamma(fpar[0]));
+  Double_t gamterm = TMath::Gamma(xx+fpar[0])/(TMath::Gamma(xx+1)*TMath::Gamma(fpar[0]));
   Double_t powterm = pow(fpar[1]/fpar[0],xx)/pow((fpar[1]/fpar[0])+1,xx+fpar[0]);
   Double_t nbd = gamterm*powterm;
 
